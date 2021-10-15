@@ -119,7 +119,14 @@ public class SatzRegistry implements VersionHandler {
         float satzVersion = asFloat(satz.getVersion());
         float requiredVersion = asFloat(version);
         for (SatzRegistry registry : INSTANCES.values()) {
-            Satz ds = registry.getSatz(satzTyp);
+            Satz ds = null;
+            try {
+                ds = registry.getSatz(satzTyp);
+            } catch (NotRegisteredException e) {
+                // satzTyp ist in dieser Version nicht registriert, gehe zur nächsten Version
+                LOG.debug("Satzart {} in {} nicht registriert, suche weiter", satzTyp, registry);
+                continue;
+            }
             if (version.equals(ds.getVersion())) {
                 return ds;
             } else if ((asFloat(ds.getVersion()) < satzVersion) && (asFloat(ds.getVersion()) > requiredVersion)) {
@@ -323,6 +330,9 @@ public class SatzRegistry implements VersionHandler {
                 LOG.trace("Details:", ex);
                 SatzXml satz = xmlService.getSatzart(satztyp.getParent());
                 satz.setSparte(satztyp.getSparte());
+                if (satztyp.getSparte() != satz.getSatzTyp().getSparte()) {
+                    satz.resetGdvSatzartName();
+                }
                 return satz;
             } else {
                 throw ex;
@@ -356,23 +366,6 @@ public class SatzRegistry implements VersionHandler {
      * @param content the content
      * @return einen gefuellten Satz
      */
-//    public Satz getSatz(final String content) {
-//        int satzart = Integer.parseInt(content.substring(0, 4));
-//        Satz satz;
-//        try {
-//            satz = getSatz(SatzTyp.of(satzart));
-//        } catch (NotRegisteredException e) {
-//            LOG.debug("can't get Satz " + satzart + " (" + e + "), parsing Sparte...");
-//            int sparte = Integer.parseInt(content.substring(10, 13));
-//            satz = getDatensatz(SatzTyp.of(satzart, sparte));
-//        }
-//        try {
-//            satz.importFrom(content);
-//            return satz;
-//        } catch (IOException ioe) {
-//            throw new IllegalArgumentException("can't parse " + content, ioe);
-//        }
-//    }
     public Satz getSatz(final String content) {
         /*
          * @Oli: diese Variante sollte deutlich besser passen als die bisherige. Jedoch habe ich nicht
@@ -483,7 +476,7 @@ public class SatzRegistry implements VersionHandler {
         if (content.length() < 256)
             throw new IOException("can't read Byte 256 from " + content);
 
-        String teildatenSatz = content.substring(content.length() - 1, content.length());
+        String teildatenSatz = content.substring(content.length() - 1);
         if (teildatenSatz.trim().length() == 0) {
             return TeildatensatzNummer.NULL;
         } else {
@@ -654,7 +647,7 @@ public class SatzRegistry implements VersionHandler {
         for (Map.Entry<SatzTyp, Satz> entry : registeredSaetze.entrySet()) {
             Satz value = entry.getValue();
             if (value instanceof Datensatz) {
-                supportedSaetze.put(entry.getKey(), (Datensatz) value);
+                supportedSaetze.put(entry.getKey(), value);
             }
         }
         return createDatenpaket(supportedSaetze);

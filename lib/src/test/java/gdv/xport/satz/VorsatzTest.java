@@ -18,13 +18,14 @@
 
 package gdv.xport.satz;
 
+import gdv.xport.Datenpaket;
 import gdv.xport.config.Config;
 import gdv.xport.feld.Bezeichner;
 import gdv.xport.feld.Datum;
 import gdv.xport.feld.Feld;
 import gdv.xport.feld.Version;
-import gdv.xport.satz.feld.Feld0001;
 import gdv.xport.util.SatzFactory;
+import gdv.xport.util.SatzRegistry;
 import gdv.xport.util.SatzTyp;
 import org.junit.Test;
 
@@ -97,8 +98,8 @@ public final class VorsatzTest extends AbstractSatzTest {
         vorsatz.setErstellungsZeitraum(startDatum, endDatum);
         checkExport(70, 85, startDatum + endDatum);
         assertEquals(startDatum + endDatum, vorsatz.getErstellungsZeitraum());
-        assertEquals(startDatum, vorsatz.get(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_VOM));
-        assertEquals(endDatum, vorsatz.get(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_BIS));
+        assertEquals(startDatum, vorsatz.getFeld(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_VOM).getInhalt());
+        assertEquals(endDatum, vorsatz.getFeld(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_BIS).getInhalt());
     }
 
     @Test
@@ -201,17 +202,6 @@ public final class VorsatzTest extends AbstractSatzTest {
         assertEquals(adressat, vorsatz.getAdressat());
     }
 
-    /**
-     * Testfall fuer Issue 10
-     * (https://github.com/oboehm/gdv.xport/issues/10).
-     */
-    @Test
-    public void testIssue10() {
-        Feld a1 = vorsatz.getFeld(Bezeichner.ART_DES_ADRESSATEN);
-        Feld a2 = vorsatz.getFeld(Feld0001.ART_DES_ADRESSATEN);
-        assertEquals(a1, a2);
-    }
-
     @Test
     public void testSetVersion() {
         SatzTyp satzTyp = SatzTyp.of("0100");
@@ -252,7 +242,7 @@ public final class VorsatzTest extends AbstractSatzTest {
 
     @Test
     public void testSetVersionSatzart() {
-        vorsatz.setVersion(200, "2.0");
+        vorsatz.setVersion(Bezeichner.SATZART_0200, "2.0");
         assertEquals("2.0", vorsatz.getVersion(200));
     }
 
@@ -264,11 +254,37 @@ public final class VorsatzTest extends AbstractSatzTest {
 
     @Test
     public void testBezeichner() {
-        assertNotNull(vorsatz.get(Bezeichner.ABSENDER));
-        assertNotNull(vorsatz.get(Bezeichner.ADRESSAT));
-        assertNotNull(vorsatz.get(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_VOM));
-        assertNotNull(vorsatz.get(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_BIS));
-        assertNotNull(vorsatz.get(Bezeichner.VERMITTLER));
+        assertNotNull(vorsatz.getFeld(Bezeichner.ABSENDER));
+        assertNotNull(vorsatz.getFeld(Bezeichner.ADRESSAT));
+        assertNotNull(vorsatz.getFeld(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_VOM));
+        assertNotNull(vorsatz.getFeld(Bezeichner.ERSTELLUNGSDAT_ZEITRAUM_BIS));
+        assertNotNull(vorsatz.getFeld(Bezeichner.VERMITTLER));
+    }
+
+    @Test
+    public void testImportVersionPreferSparte() throws IOException {
+        Datenpaket dp = SatzRegistry.getInstance("VUVM2018.xml").getAllSupportedSaetze();
+        for (Satz satz : dp.getAllSaetze()) {
+            AbstractSatzTest.setUp(satz);
+        }
+        File exportFile = new File("target/export/testVersionenHashMapPreferSpalte.txt");
+        dp.export(exportFile);
+        vorsatz.importFrom(exportFile);
+        Map<SatzTyp, Version> versionen = vorsatz.getSatzartVersionen();
+        assertEquals("2.4", versionen.get(SatzTyp.of(1)).getInhalt());
+        assertEquals("2.4", versionen.get(SatzTyp.of(220, 30)).getInhalt());
+        assertEquals("1.7", versionen.get(SatzTyp.of(210, 190)).getInhalt());
+        assertEquals("1.3", versionen.get(SatzTyp.of(220, 0)).getInhalt());
+        assertEquals("1.5", versionen.get(SatzTyp.of(220, 80)).getInhalt());
+        assertEquals("1.5", versionen.get(SatzTyp.of(220, 81)).getInhalt());
+        assertEquals("1.3", versionen.get(SatzTyp.of(220, 296)).getInhalt());
+    }
+
+    @Test
+    public void testSetVermittler() {
+        vorsatz.setVermittler("12345");
+        assertEquals("12345", vorsatz.getVermittler());
+        assertEquals("12345", vorsatz.getFeld(Bezeichner.VERMITTLER).getInhalt().trim());
     }
 
 }

@@ -125,7 +125,7 @@ public class Vorsatz extends Satz {
      */
     public void setVuNummer(final String s) {
         assert s.length() <= 5 : s + " darf nur max. 5 Zeichen lang sein";
-        this.set(Bezeichner.VU_NUMMER, s);
+        this.setFeld(Bezeichner.VU_NUMMER, s);
     }
 
     /**
@@ -143,7 +143,7 @@ public class Vorsatz extends Satz {
      * @param name Absender
      */
     public void setAbsender(final String name) {
-        this.set(Bezeichner.ABSENDER, name);
+        this.setFeld(Bezeichner.ABSENDER, name);
     }
 
     /**
@@ -161,7 +161,7 @@ public class Vorsatz extends Satz {
      * @param name neuer Adressat
      */
     public void setAdressat(final String name) {
-        this.set(Bezeichner.ADRESSAT, name);
+        this.setFeld(Bezeichner.ADRESSAT, name);
     }
 
     /**
@@ -186,7 +186,7 @@ public class Vorsatz extends Satz {
         von.setInhalt(startDatum);
         bis.setInhalt(endDatum);
 
-        this.set(Bezeichner.ERSTELLUNGS_DAT_ZEITRAUM_VOM_ZEITRAUM_BIS, (von
+        this.setFeld(Bezeichner.ERSTELLUNGS_DAT_ZEITRAUM_VOM_ZEITRAUM_BIS, (von
                 .getInhalt()).concat(bis.getInhalt()));
     }
 
@@ -199,7 +199,7 @@ public class Vorsatz extends Satz {
      */
     public void setErstellungsZeitraum(final Datum startDatum,
                                        final Datum endDatum) {
-        this.set(Bezeichner.ERSTELLUNGS_DAT_ZEITRAUM_VOM_ZEITRAUM_BIS, (startDatum
+        this.setFeld(Bezeichner.ERSTELLUNGS_DAT_ZEITRAUM_VOM_ZEITRAUM_BIS, (startDatum
                 .getInhalt()).concat(endDatum.getInhalt()));
     }
 
@@ -231,25 +231,6 @@ public class Vorsatz extends Satz {
         Datum bis = new Datum(ERSTELLUNGSDAT_ZEITRAUM_BIS, 8, vonBis.getByteAdresse() + 8);
         bis.setInhalt(vonBis.getInhalt().substring(8));
         return bis;
-    }
-
-    /**
-     * Um Geschaeftsstelle/Vermittler (Byte 86 - 95) in allen Teildatensaetzen
-     * setzen zu koennen.
-     *
-     * @param s neuer Vermittler
-     */
-    public void setVermittler(final String s) {
-        this.set(Bezeichner.GESCHAEFTSSTELLE_VERMITTLER, s);
-    }
-
-    /**
-     * @return Vermittler
-     */
-    public String getVermittler() {
-        return this.getFeld(Bezeichner.GESCHAEFTSSTELLE_VERMITTLER)
-                .getInhalt()
-                .trim();
     }
 
     /**
@@ -336,26 +317,9 @@ public class Vorsatz extends Satz {
         Bezeichner bezeichner = new Bezeichner(buf.toString());
 
         if (this.hasFeld(bezeichner)) {
-            this.set(bezeichner, satz.getSatzversion()
-                    .getInhalt());
+            this.setFeld(bezeichner, satz.getSatzversion().getInhalt());
         } else {
-            /*
-             * @Oli: im Vorsatz gibt es kein Feld mit Namen"Satzart 0212.050" sondern nur "Satzart 0212" !
-             *       Damit sind KFZ - Fahrzeugdaten "Antrag" gemeint.
-			 *       Oder waere es besser, dies in den VUVMs zu korrigieren?
-             */
-            if (satz.getSatzTyp().toString().equalsIgnoreCase("0212.050")) {
-                buf = new StringBuilder();
-                buf.append("Satzart");
-                buf.append(parts[0]);
-                bezeichner = new Bezeichner(buf.toString());
-                if (this.hasFeld(bezeichner)) {
-                    this.set(bezeichner, satz.getSatzversion()
-                            .getInhalt());
-                } else {
-                    LOG.warn("Version Satzart {} ist im Vorsatz unbekannt.", satz.getSatzTyp());
-                }
-            }
+            LOG.warn("Version Satzart {} ist im Vorsatz unbekannt.", satz.getSatzTyp());
         }
     }
 
@@ -377,7 +341,7 @@ public class Vorsatz extends Satz {
         Bezeichner bezeichner = new Bezeichner(buf.toString());
 
         if (this.hasFeld(bezeichner)) {
-            this.set(bezeichner, versionHandler.getVersionOf(satzTyp));
+            this.setFeld(bezeichner, versionHandler.getVersionOf(satzTyp));
         } else {
             throw new IllegalArgumentException("Version Satzart " + bezeichner + " unbekannt");
         }
@@ -444,26 +408,78 @@ public class Vorsatz extends Satz {
     public Map<SatzTyp, Version> getSatzartVersionen() {
         Map<SatzTyp, Version> versionen = new HashMap<>();
         for (Feld f : getFelder()) {
-            if (!f.isEmpty() && f.getBezeichner().getName().startsWith("Satzart")
+            if (!f.isEmpty() && f.getBezeichner().getTechnischerName().startsWith("Satzart")
                     && !f.getBezeichner().equals(Bezeichner.SATZART)) {
                 Version v = new Version(f);
-                versionen.put(v.getSatzTyp(), v);
+                switch (f.getBezeichner().getTechnischerName()) {
+                    case "Satzart0220020":
+                        // alle 0220.020er Satzarten haben die gleiche Version!
+                        versionen.put(SatzTyp.of("0220.020.1"), v);
+                        versionen.put(SatzTyp.of("0220.020.2"), v);
+                        versionen.put(SatzTyp.of("0220.020.3"), v);
+                        break;
+                    case "Satzart0220580":
+                        // alle 0220.580er Satzarten haben die gleiche Version!
+                        versionen.put(SatzTyp.of("0220.580.01"), v);
+                        versionen.put(SatzTyp.of("0220.580.2"), v);
+                        break;
+                    case "Satzart0220010":
+                        // alle 0220.010er Satzarten haben die gleiche Version!
+                        versionen.put(SatzTyp.of("0220.010.0"), v);
+                        versionen.put(SatzTyp.of("0220.010.13.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.13.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.13.7"), v);
+                        versionen.put(SatzTyp.of("0220.010.13.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.13.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.2.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.2.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.2.7"), v);
+                        versionen.put(SatzTyp.of("0220.010.2.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.2.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.48.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.48.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.48.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.48.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.5.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.5.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.5.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.5.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.6.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.6.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.6.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.6.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.7.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.7.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.7.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.7.9"), v);
+                        versionen.put(SatzTyp.of("0220.010.9.1"), v);
+                        versionen.put(SatzTyp.of("0220.010.9.6"), v);
+                        versionen.put(SatzTyp.of("0220.010.9.7"), v);
+                        versionen.put(SatzTyp.of("0220.010.9.8"), v);
+                        versionen.put(SatzTyp.of("0220.010.9.9"), v);
+                        break;
+                    case "Satzart0221010":
+                        // alle 0221.010er Satzarten haben die gleiche Version!
+                        versionen.put(SatzTyp.of("0221.010.13.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.13.7"), v);
+                        versionen.put(SatzTyp.of("0221.010.13.8"), v);
+                        versionen.put(SatzTyp.of("0221.010.2.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.2.7"), v);
+                        versionen.put(SatzTyp.of("0221.010.2.8"), v);
+                        versionen.put(SatzTyp.of("0221.010.48.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.5.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.5.8"), v);
+                        versionen.put(SatzTyp.of("0221.010.6.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.6.8"), v);
+                        versionen.put(SatzTyp.of("0221.010.7.1"), v);
+                        versionen.put(SatzTyp.of("0221.010.7.8"), v);
+                        break;
+                    default:
+                        versionen.put(v.getSatzTyp(), v);
+                }
             }
         }
         return versionen;
-    }
-
-    /**
-     * Da im Feld "Erstellungs-Datum Zeitraum vom- Zeitraum bis" (Adresse 70-85)
-     * 2 Datumsfelder zusammengefasst sind, ist diese Methode ueberschrieben,
-     * um diese beiden Felder auch einzeln abfragen zu koennen.
-     *
-     * @param bezeichner gesuchtes Field
-     * @return Wert des Feldes als String
-     */
-    @Override
-    public String get(Bezeichner bezeichner) {
-        return getFeld(bezeichner).getInhalt();
     }
 
     /**
@@ -506,5 +522,52 @@ public class Vorsatz extends Satz {
         }
         return felder;
     }
+
+
+
+//    /**
+//     * Die Idee bei der VersionenHashMap ist, bei der Abfrage der Versionen fuer
+//     * einen bestimmte Satzart (also z.B. 0220.010.7.6) eben nur auf die
+//     * "uebergeordnete" Gruppe zu gehen (in dem Falle 0220.010, da nur für diese
+//     * Kombination eine Version im Vorsatz geliefert wird).
+//     * Diese Logik ist bei {@link VersionenHashMap#get(Object)} abgebildet (s.a.
+//     * https://github.com/oboehm/gdv.xport/issues/64#issuecomment-924107450).
+//     *
+//     * @since 5.2
+//     * @author markusneidhart
+//     */
+//    private static class VersionenHashMap extends HashMap<SatzTyp, Version> {
+//
+//        @Override
+//        public boolean containsKey(Object satzTyp) {
+//            return findEntry(satzTyp).isPresent();
+//        }
+//
+//        @Override
+//        public Version get(Object satzTyp) {
+//            Version v = super.get(satzTyp);
+//            if (v == null) {
+//                Optional<Entry<SatzTyp, Version>> entry = findEntry(satzTyp);
+//                v = entry.map(Entry::getValue).orElse(null);
+//            }
+//            return v;
+//        }
+//
+//        private Optional<Entry<SatzTyp, Version>> findEntry(Object key) {
+//            if (!(key instanceof SatzTyp)) {
+//                return Optional.empty();
+//            }
+//            SatzTyp satzTyp = (SatzTyp) key;
+//            return entrySet().stream()
+//                    .filter(e -> matches(e, satzTyp)).min(Comparator.comparingInt(e1 -> -e1.getKey().getSparte()));
+//        }
+//
+//        private static boolean matches(Entry<SatzTyp, Version> e, SatzTyp satzTyp) {
+//            SatzTyp stored = e.getKey();
+//            return stored.getSatzart() == satzTyp.getSatzart() &&
+//                    (!satzTyp.hasSparte() || !stored.hasSparte() || stored.getSparte() == satzTyp.getSparte());
+//        }
+//
+//    }
 
 }

@@ -291,6 +291,28 @@ public abstract class Satz implements Cloneable {
 		this.teildatensatz = ArrayUtils.remove(this.teildatensatz, n - 1);
 	}
 
+    /**
+     * Entfernt den gewuenschten Teildatensatz mit der wirklichen Satznummer n.
+     *
+     * @param n wirkliche Satznummer des Teildatensatzes
+     */
+    public final void removeTeildatensatzBySatzNr(final int n) {
+        boolean treffer = false;
+        int index = 0;
+
+        for (Teildatensatz tds : this.teildatensatz) {
+             if (Integer.parseInt(tds.getSatznummer().getInhalt()) == n)
+                 treffer = true;
+             else
+                 index++;
+        }
+
+        if (!treffer)
+            throw new IllegalArgumentException("Teildatensatz " + n + " existiert nicht.");
+
+        this.teildatensatz = ArrayUtils.remove(this.teildatensatz, index);
+    }
+
 	/**
 	 * Und hierueber kann ein Teildatensatz hinzugefuegt werden.
 	 *
@@ -357,56 +379,104 @@ public abstract class Satz implements Cloneable {
         }
     }
 
-    /**
-     * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
-     * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
-     * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
-     * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
-     * gefunden wird, wird eine IllegalArgumentException geworfen.
-     *
-     * @param name Name des Felds (Bezeichnung)
-     * @param value the value
-     */
-    public void set(final String name, final String value) {
-        this.set(new Bezeichner(name), value);
-    }
+	/**
+	 * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
+	 * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
+	 * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
+	 * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
+	 * gefunden wird, wird eine IllegalArgumentException geworfen.
+	 *
+	 * @param name Name des Felds (Bezeichnung)
+	 * @param value the value
+	 * @deprecated wurde durch {@link Satz#setFeld(String, String)} ersetzt
+	 */
+	@Deprecated
+	public void set(final String name, final String value) {
+		this.setFeld(new Bezeichner(name), value);
+	}
 
-    /**
+	/**
+	 * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
+	 * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
+	 * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
+	 * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
+	 * gefunden wird, wird eine IllegalArgumentException geworfen.
+	 *
+	 * @param name Name des Felds (Bezeichnung)
+	 * @param value the value
+	 * @since 5.2
+	 */
+	public void setFeld(final String name, final String value) {
+		this.setFeld(new Bezeichner(name), value);
+	}
+
+	/**
      * Setzt den Inhalt des gewuenschten Feldes.
      *
      * @param name  Name des Felds (Bezeichnung)
      * @param value neuer Inhalt
+	 * @deprecated wurde durch {@link Satz#setFeld(Bezeichner, Integer)} ersetzt
      */
+	@Deprecated
     public void set(final Bezeichner name, final Integer value) {
-        this.set(name, Integer.toString(value));
+        this.setFeld(name, Integer.toString(value));
     }
-    /**
-     * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
-     * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
-     * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
-     * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
-     * gefunden wird, wird eine IllegalArgumentException geworfen.
-     *
-     * @param name Name des Felds (Bezeichnung)
-     * @param value the value
-     * @since 2.0
-     */
-    public void set(final Bezeichner name, final String value) {
-        boolean found = false;
-        for (Teildatensatz tds : teildatensatz) {
-        	if (tds.hasFeld(name)) {
-        		Feld x = tds.getFeld(name);
-        		x.setInhalt(value);
-        		if (x.isInvalid()) {
-        			throw new IllegalArgumentException(String.format("ungueltiger Wert '%s' fuer %s", value, x));
+
+	/**
+	 * Setzt den Inhalt des gewuenschten Feldes.
+	 *
+	 * @param name  Name des Felds (Bezeichnung)
+	 * @param value neuer Inhalt
+	 * @since 5.2
+	 */
+	public void setFeld(final Bezeichner name, final Integer value) {
+		this.set(name, Integer.toString(value));
+	}
+
+	/**
+	 * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
+	 * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
+	 * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
+	 * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
+	 * gefunden wird, wird eine IllegalArgumentException geworfen.
+	 *
+	 * @param name Name des Felds (Bezeichnung)
+	 * @param value the value
+	 * @since 2.0
+	 * @deprecated wurde durch {@link Satz#setFeld(Bezeichner, String)} ersetzt
+	 */
+	@Deprecated
+	public void set(final Bezeichner name, final String value) {
+		setFeld(name, value);
+	}
+
+	/**
+	 * Setzt das angegebene Feld in allen Teildatensaetzen, in denen es gefunden
+	 * wird. Normalerweise braeuchten wir eigentlich nur die erste Fundstelle
+	 * setzen, da die anderen Teildatensaetze (hoffentlich) auf die gleiche
+	 * Referenz verweisen - aber sicher ist sicher. Falls das Feld nicht
+	 * gefunden wird, wird eine IllegalArgumentException geworfen.
+	 *
+	 * @param name Name des Felds (Bezeichnung)
+	 * @param value the value
+	 * @since 5.2
+	 */
+	public void setFeld(final Bezeichner name, final String value) {
+		boolean found = false;
+		for (Teildatensatz tds : teildatensatz) {
+			if (tds.hasFeld(name)) {
+				Feld x = tds.getFeld(name);
+				x.setInhalt(value);
+				if (x.isInvalid()) {
+					throw new IllegalArgumentException(String.format("ungueltiger Wert '%s' fuer %s", value, x));
 				}
-        		found = true;
+				found = true;
 			}
-        }
-        if (!found) {
-            throw new IllegalArgumentException("Feld \"" + name + "\" not found");
-        }
-    }
+		}
+		if (!found) {
+			throw new IllegalArgumentException("Feld \"" + name + "\" not found");
+		}
+	}
 
 	/**
 	 * Setzt den Inhalt des gewuenschten Feldes.
@@ -455,6 +525,26 @@ public abstract class Satz implements Cloneable {
     public final void set(final Enum feldX, final Character value) {
         this.set(feldX, Character.toString(value));
     }
+
+	/**
+	 * Setzt den Vermittler in das entsprechende Feld.
+	 *
+	 * @param vermittler der Vermittler
+	 * @since 5.2
+	 */
+	public final void setVermittler(String vermittler) {
+		setFeld(Bezeichner.VERMITTLER, vermittler);
+	}
+
+	/**
+	 * Liefert den Vermittler zurueck.
+	 *
+	 * @return Vermittler
+	 * @since 5.2
+	 */
+	public final String getVermittler() {
+		return getFeld(Bezeichner.VERMITTLER).getInhalt().trim();
+	}
 
     /**
      * Setzt die Satzartnummer einer Satzart. Nicht verwechseln mit Satznummer!
@@ -505,12 +595,17 @@ public abstract class Satz implements Cloneable {
 
         this.gdvSatzartName = buf.toString();
     }
+
+    public void resetGdvSatzartName() {
+    	this.gdvSatzartName = "";
+	}
+
     /**
      * Setzt die Version des Satzes
      * 
      * @param version die Satzversion
      */
-    public final void setSatzversion(final String version) {
+    private final void setSatzversion(final String version) {
         this.satzVersion.setInhalt(version);
     }
 
@@ -539,7 +634,9 @@ public abstract class Satz implements Cloneable {
 	 * @param name gesuchtes Feld
 	 * @return Inhalt des gefundenden Felds (NULL_STRING, falls 'name' nicht
 	 * gefunden wurde)
+	 * @deprecated bitte {@link Satz#getFeld(String)} verwenden
 	 */
+    @Deprecated
 	public final String get(final String name) {
 		return get(new Bezeichner(name));
 	}
@@ -551,7 +648,9 @@ public abstract class Satz implements Cloneable {
      * @return Inhalt des gefundenden Felds (NULL_STRING, falls 'name' nicht
      * gefunden wurde)
      * @since 2.0
+	 * @deprecated bitte {@link Satz#getFeld(Bezeichner)} verwenden
      */
+    @Deprecated
     public String get(final Bezeichner bezeichner) {
         Feld f = getFeld(bezeichner);
         if (f == Feld.NULL_FELD) {
@@ -563,10 +662,15 @@ public abstract class Satz implements Cloneable {
 
 	/**
 	 * Liefert den Inhalt des gewuenschten Feldes.
+	 * <p>
+	 * TODO: wird ab v6 entfernt werden
+	 * </p>
 	 *
 	 * @param feldX das gewuenschte Feld-Element
 	 * @return Inhalt des gefundenden Felds
+	 * @deprecated wird kuenftig nicht mehr unterstuetzt
 	 */
+	@Deprecated
 	public final String get(final Enum feldX) {
 		Bezeichner name = Feld.getAsBezeichner(feldX);
 		return this.get(name);
@@ -809,10 +913,9 @@ public abstract class Satz implements Cloneable {
 	 * @param name gewuenschter Bezeichner des Feldes
 	 * @param nr Nummer des Teildatensatzes (1, 2, ...)
 	 * @return NULL_FELD, falls das angegebene Feld nicht gefunden wird
-     * @throws IllegalArgumentException falls es das Feld nicht gibt
 	 * @since 0.2
 	 */
-	public final Feld getFeld(final String name, final int nr) throws IllegalArgumentException {
+	public final Feld getFeld(final String name, final int nr) {
 		assert (0 < nr) && (nr <= teildatensatz.length) : nr + " liegt ausserhalb des Bereichs";
 		return teildatensatz[nr - 1].getFeld(name);
 	}
@@ -823,10 +926,9 @@ public abstract class Satz implements Cloneable {
 	 * @param name gewuenschter Bezeichner des Feldes
 	 * @param nr Nummer des Teildatensatzes (1, 2, ...)
 	 * @return Inhalt des Feldes (getrimmt, d.h. ohne Leerzeichen am Ende)
-     * @throws IllegalArgumentException falls es das Feld nicht gibt
 	 * @since 0.3
 	 */
-	public final String getFeldInhalt(final String name, final int nr) throws IllegalArgumentException {
+	public final String getFeldInhalt(final String name, final int nr) {
 		return this.getFeld(name, nr).getInhalt().trim();
 	}
 
@@ -1168,7 +1270,7 @@ public abstract class Satz implements Cloneable {
             	// pruefe ob dieser oder einer der naechsten Teildatensaetze zur gelieferten Satznummer passen
 				char nr = Satznummer.readSatznummer(reader, teildatensatz[j]).toChar();
 				if (!Character.isDigit(nr) || (teildatensatz[j].getSatznummer().toChar() != nr)) {
-					LOG.info("Zeile {}: {} erwartet statt {} - ueberspringe Teildatensatz {}.",
+					LOG.debug("Zeile {}: {} erwartet statt {} - ueberspringe Teildatensatz {}.",
 							reader.getLineNumber(), teildatensatz[j].getSatznummer(), nr, j+1);
 					continue;
 				}

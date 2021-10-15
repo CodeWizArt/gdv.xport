@@ -20,16 +20,15 @@ import gdv.xport.satz.Datensatz;
 import gdv.xport.satz.Nachsatz;
 import gdv.xport.satz.Satz;
 import gdv.xport.satz.Vorsatz;
-import gdv.xport.satz.feld.FeldX;
 import gdv.xport.satz.feld.common.TeildatensatzNummer;
 import gdv.xport.satz.feld.common.WagnisartLeben;
-import gdv.xport.satz.model.SatzX;
 import gdv.xport.util.SatzRegistry;
 import gdv.xport.util.SatzTyp;
 import gdv.xport.util.SimpleConstraintViolation;
 import gdv.xport.util.URLReader;
 import net.sf.oval.ConstraintViolation;
 import net.sf.oval.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,21 +51,6 @@ public class Datenpaket {
     private Vorsatz vorsatz = new Vorsatz();
     private final List<Datensatz> datensaetze = new ArrayList<>();
     private Nachsatz nachsatz = new Nachsatz();
-
-    private static final int[] spartenIdentischZu_000 = {60, 63, 65, 69, 160,
-            161, 162, 169, 233, 240, 241, 242, 243, 249, 250, 251, 252, 290, 291, 293,
-            294, 296, 299, 630, 650};
-
-    private static final int[] spartenIdentischZu_080 = {80, 81, 82, 83, 89,
-            90, 99, 100, 109, 120, 123, 124, 150, 210, 230, 231};
-
-    private static final int[] spartenIdentischZu_170 = {170, 171, 172, 174,
-            175, 176, 179, 232};
-
-    private static final int[] spartenIdentischZu_190 = {180, 181, 182, 183,
-            184, 185, 189, 190, 191, 192, 193, 194, 197, 199};
-
-    private static final int[] spartenIdentischZu_510 = {241, 244, 510};
 
     /**
      * Wenn man den Default-Konstruktor verwendet, sollte man vorher die
@@ -114,6 +98,7 @@ public class Datenpaket {
                 datenpaket.vorsatz = (Vorsatz) satz;
             } else if (satz instanceof Nachsatz) {
                 datenpaket.nachsatz = (Nachsatz) satz;
+                datenpaket.vorsatz.setVersion(datenpaket.nachsatz);
             } else {
                 dsList.add((Datensatz) satz);
             }
@@ -132,7 +117,9 @@ public class Datenpaket {
     public void setVuNummer(final String vuNummer) {
         this.vorsatz.setVuNummer(vuNummer);
         for (Datensatz datensatz : this.datensaetze) {
-            datensatz.setVuNummer(vuNummer);
+            if (datensatz.hasFeld(Bezeichner.VU_NUMMER)) {
+                datensatz.setVuNummer(vuNummer);
+            }
         }
     }
 
@@ -239,6 +226,7 @@ public class Datenpaket {
             throw new IllegalArgumentException(("0001").equalsIgnoreCase(datensatz
                     .getGdvSatzartName()) ? "Einen Vorsatz gibt es bereits!"
                     : "Einen Nachsatz gibt es bereits!");
+        preset(datensatz);
         datensaetze.add(datensatz);
         vorsatz.setVersion(datensatz);
         if (datensatz.getSatzTyp().equals(SatzTyp.of(200))) {
@@ -249,6 +237,15 @@ public class Datenpaket {
             setNachsatzSummenAus0500(datensatz);
         }
         nachsatz.setAnzahlSaetze(datensaetze.size());
+    }
+
+    private void preset(Datensatz datensatz) {
+        if (StringUtils.isNotEmpty(getVuNummer()) && datensatz.hasVuNummer() && StringUtils.isEmpty(datensatz.getVuNummer())) {
+            datensatz.setVuNummer(getVuNummer());
+        }
+        if (StringUtils.isEmpty(datensatz.getVermittler())) {
+            datensatz.setVermittler(getVermittler());
+        }
     }
 
     /**
@@ -429,7 +426,7 @@ public class Datenpaket {
      * @return das Datenpaket zur Weiterverabeitung
      * @throws IOException falls was schief gelaufen ist
      */
-    public static Satz importSatz(PushbackLineNumberReader reader, Map<SatzTyp, Version> satzartVersionen) throws IOException {
+    protected static Satz importSatz(PushbackLineNumberReader reader, Map<SatzTyp, Version> satzartVersionen) throws IOException {
         int satzart = Satz.readSatzart(reader);
         LOG.debug("Satzart {} wird importiert...", satzart);
         if (satzart == 9999) {
@@ -506,9 +503,6 @@ public class Datenpaket {
             throws IOException {
         SatzTyp satzTyp = readSatzTyp(reader, satzart);
         Datensatz satz = SatzRegistry.getInstance().getDatensatz(satzTyp);
-        if (satzTyp.equals(SatzTyp.of("0220.020"))) {
-            satz = new SatzX(220, 20, FeldX.class);
-        }
         satz.importFrom(reader);
         return satz;
     }
@@ -552,7 +546,21 @@ public class Datenpaket {
 
     /**
      * Fasst benachbarte Saetze mit Luecken zusammen, sofern es sinnvoll ist.
-     * Diese Version wurde mit Issue #62 eingefuehrt.
+     * So kann z.B. folgende Reihenfolge in den Datensaetzen vorkommen:
+     * <pre>
+     *     0220.010.13.1 Teildatensatz 1
+     *     0221.010.13.1 Teildatensatz 1
+     *     0220.010.13.1 Teildatensatz 2
+     * </pre>
+     * Logisch gehoeren Teildatensatz 1 und 2 von Satzart 0220.010.13.1
+     * zusammen. Gemaess den FAQ des GDVs ist es wohl zulaessig, dass
+     * Teildatensatz 1 von Satzart 0221.xxx dazwischen stehen darf. Daher
+     * fasst die pack-Methode dieses getrennten Teildatensaetze wieder
+     * zusammen.
+     * <p>
+     * Diese Version wurde mit Issue #62 eingefuehrt. Naehere Infos siehe
+     * https://github.com/oboehm/gdv.xport/issues/62.
+     * </p>
      *
      * @return das Datenpaket selbst zur Weiterverarbeitung
      * @since 5.2
@@ -670,8 +678,9 @@ public class Datenpaket {
      * @param s Vermittler
      */
     public void setVermittler(final String s) {
-        this.vorsatz.setVermittler(s);
-        this.nachsatz.setVermittler(s);
+        for (Satz satz : getAllSaetze()) {
+            satz.setVermittler(s);
+        }
     }
 
     /**

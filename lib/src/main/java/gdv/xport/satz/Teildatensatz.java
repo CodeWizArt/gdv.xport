@@ -338,9 +338,25 @@ public class Teildatensatz extends Satz {
      * @param name der Name des Feldes
      * @param value der gewuenschte Werte als String
      * @see Satz#set(String, String)
+     * @deprecated wurde durch {@link Teildatensatz#setFeld(Bezeichner, String)} ersetzt
      */
+    @Deprecated
     @Override
     public void set(final Bezeichner name, final String value) {
+        setFeld(name, value);
+    }
+
+    /**
+     * Setzt das gewuenschte Feld. Falls es nicht vorhanden ist, wird analog
+     * zur Oberklasse eine {@link IllegalArgumentException} geworfen.
+     *
+     * @param name der Name des Feldes
+     * @param value der gewuenschte Werte als String
+     * @see Satz#set(String, String)
+     * @since 5.2
+     */
+    @Override
+    public void setFeld(final Bezeichner name, final String value) {
         Feld x = this.getFeld(name);
         if (x == Feld.NULL_FELD) {
             throw new IllegalArgumentException("Feld \"" + name + "\" not found");
@@ -354,24 +370,24 @@ public class Teildatensatz extends Satz {
      * @param adresse Adresse des gewuenschten Feldes
      * @param value   Wert
      * @since 5.0
+     * @deprecated wurde durch {@link Teildatensatz#setFeld(ByteAdresse, String)} ersetzt
      */
+    @Deprecated
     public void set(final ByteAdresse adresse, final String value) {
         Feld x = this.getFeld(adresse);
         x.setInhalt(value);
     }
 
     /**
-     * Liefert das gewuenschte Feld. Allerdings wird nur der Name des Feldes
-     * benutzt, um das Feld zu bestimmen. Dazu werden auch die Konstanten in
-     * {@link gdv.xport.feld.Bezeichner} verwendet.
+     * Setzt das gewuenschte Feld anhand der uebergebenen ByteAdresse.
      *
-     * @param feldX gewuenschtes Feld-Element
-     * @return das gesuchte Feld
-     * @throws IllegalArgumentException falls es das Feld nicht gibt
+     * @param adresse Adresse des gewuenschten Feldes
+     * @param value   Wert
+     * @since 5.2
      */
-    @Override
-    public Feld getFeld(final Enum feldX) throws IllegalArgumentException {
-        return getFeld(Bezeichner.of(feldX));
+    public void setFeld(final ByteAdresse adresse, final String value) {
+        Feld x = this.getFeld(adresse);
+        x.setInhalt(value);
     }
 
     /**
@@ -488,7 +504,9 @@ public class Teildatensatz extends Satz {
      * @param feldX the feld x
      * @return true, falls Feld vorhanden ist.
      * @since 0.9
+     * @deprecated inzwischen durch {@link #hasFeld(Bezeichner)} abgeloest
      */
+    @Deprecated
     public boolean hasFeld(final Enum feldX) {
         return this.hasFeld(Bezeichner.of(feldX));
     }

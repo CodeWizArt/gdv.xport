@@ -15,26 +15,29 @@ Aus Gründen der Übersichtlichkeit sind bei älteren Versionen die einzelnen Pa
 - ByteAdresse durchgängiger verwenden
 
 
-## [Unreleased]
+## [5.2.0] - 2021-10-10
 
 ### Added
 
 - zusätzliche Unterstützung von Datensätzen Stand 2009
   (Stand 2007 wird nicht unterstützt, weil die vom GDV bereit gestellte `VUVM20007_150507.xml` [Fehler](http://www.gdv-online.de/vuvm/bestand/best_2007.htm) enthält und damit z.B. Satz 0220.030 beim Import nicht richtig gefüllt wird)
-- SatzRegistry.getSatz(..) akzeptiert jetzt zusätzlich die gewünschte Version
+- SatzRegistry#getSatz(..) akzeptiert jetzt zusätzlich die gewünschte Version
 - Liste der gesetzten Versionen läßt sich jetzt über `Vorsatz.getSatzartVersionen()` abfragen
 - Datenpaket besitzt jetzt eine pack()-Methode
   ([Issue #62](https://github.com/oboehm/gdv.xport/issues/62))
 - GdvXmlFormatter generiert jetzt eine Info-Angabe nach dem XML-Header
+- Satz#setVermittler(..) und #getVermittler() hinzugefügt
 
 ### Changed
 
-- Datenpaket#importFrom(..)-Methoden berücksichtigen jetzt die angegebene Version aus dem Vorsatz und liefern Sätze der entsprechende Version (aktuell nur für Version VUVM2013, VUVM2015 und VUVM2018)
+- Datenpaket#setVuNummer(..) und Datenpaket#setVermittler(..) setzt jetzt nicht nur die Werte im Vor-/Nachsatz, sondern in allen Sätzen
+- Datenpaket#importFrom(..)-Methoden berücksichtigen jetzt die angegebene Version aus dem Vorsatz und liefern Sätze der entsprechende Version (aktuell für Version VUVM2009, VUVM2013, VUVM2015 und VUVM2018, [Issue #64](https://github.com/oboehm/gdv.xport/issues/64))
 - Datenpaket#importFrom(..)-Methoden liefern jetzt ein Datenpaket zur Weiterverarbeitung zurück, z.B. für `x = importFrom(istream).pack();`
 - _fixed_: Parsen von Teildatensätzen ohne Satznummer korrigiert
   ([Issue #63](https://github.com/oboehm/gdv.xport/pull/63))
 - _fixed_: Satznummer wird jetzt auch für Satzart 0220.030 und anderen Satzarten mit mehrdeutigen Satznummernpositionen korrekt erkannt
 - _fixed_: SatzRegistry.getAllSupportedSaetze() liefert jetzt den passenden Vorsatz zur SatzRegistry
+- Satz#set(..) durch Satz#setFeld(..) ersetzt und Satz#get(..) als @Deprecated markiert
 
 
 ## [5.1.0] - 2021-08-29
