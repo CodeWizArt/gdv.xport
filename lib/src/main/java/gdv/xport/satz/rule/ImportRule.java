@@ -84,8 +84,9 @@ public class ImportRule {
         return new RuleBuilder()
                 .name("0220.580")
                 .description("Bausparen")
+                .when(facts -> facts.get("sparte").equals("580"))
                 //.when(facts -> (isSatzart(220) && facts.get("sparte").equals("580")))
-                .when(facts -> true)
+                //.when(facts -> true)
                 .then(facts -> System.out.println("0220.0580.x\n"))
                 .build();
     }

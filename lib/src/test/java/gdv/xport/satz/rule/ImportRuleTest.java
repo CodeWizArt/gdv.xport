@@ -6,12 +6,18 @@ package gdv.xport.satz.rule;
 import gdv.xport.io.PushbackLineNumberReader;
 import gdv.xport.util.SatzRegistry;
 import gdv.xport.util.SatzTyp;
+import org.jeasy.rules.api.Facts;
+import org.jeasy.rules.api.Rule;
+import org.jeasy.rules.api.Rules;
+import org.jeasy.rules.api.RulesEngine;
+import org.jeasy.rules.core.DefaultRulesEngine;
+import org.jeasy.rules.core.RuleBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit-Test fuer ImportRule.
@@ -31,6 +37,38 @@ public class ImportRuleTest {
             SatzTyp satzTyp = rule.getSatzTyp();
             assertEquals(bausparen, satzTyp);
         }
+    }
+
+    @Test
+    public void testRule() {
+        // define facts
+        Facts facts = new Facts();
+        facts.put("satzart", "1");
+
+        // define rules
+        Rule vorsatzRule = new RuleBuilder()
+                .name("Vorsatz-Regel")
+                .description("wenn Satzart 1 ist, ist es ein Vorsatz")
+                .when(f -> f.get("satzart").equals("1"))
+                .then(f -> System.out.println("Juhu - es ist ein Vorsatz"))
+                .build();
+        Rule simpleRule = new RuleBuilder()
+                .name("Einfach-Regel")
+                .description("Ermittlung einer Satzart ohne Sparte")
+                .when(f -> isSatzart(f))
+                .then(f -> System.out.println("isch ne einfache Satzart"))
+                .build();
+        Rules rules = new Rules();
+        rules.register(vorsatzRule);
+        rules.register(simpleRule);
+
+        // fire rules on known facts
+        RulesEngine rulesEngine = new DefaultRulesEngine();
+        rulesEngine.fire(rules, facts);
+    }
+
+    private boolean isSatzart(Facts f) {
+        return f.get("satzart").equals("1");
     }
 
 }
